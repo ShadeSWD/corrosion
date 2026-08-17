@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Обрастание, сопротивление и расход топлива за междоковый период</title>
+<meta name="description" content="Живой расчёт влияния обрастания на сопротивление и расход топлива: смоченная поверхность, число Рейнольдса, коэффициент трения ITTC-57, надбавка на шероховатость по Боудену — Дэвисону, прирост буксировочного сопротивления и мощности, перерасход топлива за междоковый период и потеря скорости при постоянной мощности.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧪</text></svg>">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<script src="assets/site.js" data-root="./" data-page="p-fouling"></script>
+<main class="wrap">
+  <h1>Обрастание, сопротивление и расход топлива</h1>
+  <p class="lead">Обрастание не ломает конструкцию — оно берёт деньгами.
+  Шероховатость корпуса растёт от докования к докованию, вместе с ней растёт
+  коэффициент трения, за ним — буксировочное сопротивление, мощность на валу
+  и расход топлива. Ниже эта цепочка развёрнута полностью и посчитана за весь
+  междоковый период, а не в одной точке.</p>
+
+  <div class="tldr">
+    <h2>Коротко</h2>
+    <ul>
+      <li>Коэффициент трения эквивалентной пластины берут по ITTC-57:
+      \(C_F = 0{,}075/(\lg \mathrm{Re} - 2)^2\).</li>
+      <li>Надбавку на шероховатость — по формуле Боудена — Дэвисона в редакции
+      ITTC-78 через эквивалентную песочную шероховатость \(k_s\).</li>
+      <li>Шероховатость нарастает почти линейно, и темп задаёт тип
+      противообрастающего покрытия: от 10 мкм/год у самоочищающихся
+      силиконовых до сотен микрометров при отсутствии защиты.</li>
+      <li>Перерасход топлива за период равен интегралу прироста мощности по
+      времени — усреднять «по концу периода» нельзя, получится завышение
+      примерно вдвое.</li>
+    </ul>
+  </div>
+
+  <div class="note warn"><b>Границы применимости.</b> Формула Боудена —
+  Дэвисона описывает влияние <b>шероховатости</b> — сварных швов, бухтин,
+  дефектов окраски, слизи и мелких обрастателей. Развитое макрообрастание
+  (балянусы высотой сантиметры, «джунгли» водорослей) она недооценивает: там
+  добавляется сопротивление формы отдельных организмов, и реальные потери
+  бывают в разы больше расчётных. Поэтому вариант «без противообрастающего
+  покрытия» ниже следует читать как нижнюю оценку.</div>
+
+  <h2>Исходные данные</h2>
+  <div class="panel">
+    <div class="inp" id="in">
+      <label><span>Длина по ватерлинии L, м</span>
+        <input type="number" id="L" value="180" step="1" min="10" max="450"></label>
+      <label><span>Ширина B, м</span>
+        <input type="number" id="B" value="32" step="0.5" min="2" max="70"></label>
+      <label><span>Осадка d, м</span>
+        <input type="number" id="d" value="12" step="0.1" min="0.5" max="30"></label>
+      <label><span>Коэффициент общей полноты C<sub>b</sub></span>
+        <input type="number" id="Cb" value="0.80" step="0.01" min="0.4" max="0.95"></label>
+      <label><span>Скорость хода V, узлы</span>
+        <input type="number" id="V" value="14" step="0.5" min="4" max="35"></label>
+      <label><span>Температура воды, °C</span>
+        <input type="number" id="tw" value="15" step="1" min="0" max="30"></label>
+      <label><span>Остаточное сопротивление C<sub>R</sub> (форма и волны)</span>
+        <input type="number" id="CR" value="0.0008" step="0.0001" min="0" max="0.005"></label>
+
+      <label><span>Противообрастающая система</span>
+        <select id="af"></select></label>
+      <label><span>Темп прироста шероховатости, мкм/год</span>
+        <input type="number" id="dks" value="20" step="5" min="0" max="600"></label>
+      <label><span>Шероховатость после докования k<sub>s0</sub>, мкм</span>
+        <input type="number" id="ks0" value="150" step="10" min="30" max="600"></label>
+      <label><span>Междоковый период, месяцы</span>
+        <input type="number" id="T" value="36" step="3" min="6" max="90"></label>
+
+      <label><span>Пропульсивный коэффициент η<sub>D</sub></span>
+        <input type="number" id="etaD" value="0.68" step="0.01" min="0.4" max="0.85"></label>
+      <label><span>Удельный расход топлива, г/(кВт·ч)</span>
+        <input type="number" id="sfoc" value="180" step="5" min="120" max="260"></label>
+      <label><span>Доля ходового времени, %</span>
+        <input type="number" id="run" value="60" step="5" min="5" max="100"></label>
+      <label><span>Цена топлива, $/т</span>
+        <input type="number" id="price" value="600" step="25" min="100" max="1500"></label>
+    </div>
+
+    <div class="boards">
+      <div>
+        <svg viewBox="0 0 640 336" class="geo-board" style="max-width:640px" id="board"></svg>
+        <div class="caption">Верхняя кривая — рост эквивалентной шероховатости
+        от докования к докованию, нижняя — вызванный ею прирост потребной
+        мощности. Заштрихованная площадь под нижней кривой и есть перерасход
+        топлива за период.</div>
+      </div>
+      <div>
+        <div class="live-sum" id="sum"></div>
+        <div id="verdict" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Шаг 1. Смоченная поверхность и число Рейнольдса</h2>
+  <p>Смоченную поверхность оценим по формуле Мумфорда; при наличии
+  гидростатических расчётов её, конечно, берут с кривых элементов теоретического
+  чертежа.</p>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$S = 1{,}025\,L\,(C_b B + 1{,}7 d)$$</div>
+      <div class="cs" id="o_S"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">$$\mathrm{Re} = \frac{V L}{\nu}$$</div>
+      <div class="cs" id="o_Re"></div>
+    </div>
+  </div>
+
+  <h2>Шаг 2. Коэффициент трения и надбавка на шероховатость</h2>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$C_F = \frac{0{,}075}{(\lg \mathrm{Re} - 2)^2}$$</div>
+      <div class="cs" id="o_CF"></div>
+    </div>
+    <div class="calc-row hl">
+      <div class="cf">$$\Delta C_F = 0{,}044\left[\left(\frac{k_s}{L}\right)^{1/3}
+      - 10\,\mathrm{Re}^{-1/3}\right] + 0{,}000125$$</div>
+      <div class="cs" id="o_dcf0"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Шероховатость в конце периода:
+      $$k_s(T) = k_{s0} + \dot k_s\,T$$</div>
+      <div class="cs" id="o_ksT"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Та же формула при \(k_s(T)\):</div>
+      <div class="cs" id="o_dcfT"></div>
+    </div>
+  </div>
+
+  <h2>Шаг 3. Сопротивление и мощность</h2>
+  <p>Полный коэффициент сопротивления складывается из трения эквивалентной
+  пластины, надбавки на шероховатость и остаточного сопротивления (форма
+  корпуса и волнообразование). Физика первых двух слагаемых разобрана в главе
+  о <a href="https://shadeswd.duckdns.org/mzg/t-boundary">пограничном слое</a>.</p>
+  <div class="calc">
+    <div class="calc-row">
+      <div class="cf">$$C = C_F + \Delta C_F + C_R$$</div>
+      <div class="cs" id="o_C"></div>
+    </div>
+    <div class="calc-row hl">
+      <div class="cf">$$R = \tfrac{1}{2}\rho S V^{2} C, \qquad
+      P_E = R V, \qquad P_B = \frac{P_E}{\eta_D}$$</div>
+      <div class="cs" id="o_P"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">То же в конце периода:</div>
+      <div class="cs" id="o_PT"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Прирост потребной мощности к концу периода:
+      $$\delta = \frac{P_B(T) - P_B(0)}{P_B(0)}\cdot 100\ \%$$</div>
+      <div class="cs" id="o_delta"></div>
+    </div>
+  </div>
+
+  <h2>Шаг 4. Топливо за междоковый период</h2>
+  <p>Прирост мощности меняется во времени, поэтому перерасход считаем
+  интегралом, а не по конечной точке. Ходовое время за период:</p>
+  <div class="calc">
+    <div class="calc-row">
+      <div class="cf">$$t_{\text{ход}} = T\cdot 730\cdot \frac{\text{доля}}{100}
+      \ \ [\text{ч}]$$</div>
+      <div class="cs" id="o_th"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Топливо, если бы корпус весь период оставался в состоянии
+      сразу после докования (эталон сравнения):
+      $$G_0 = \mathrm{SFOC}\cdot P_B(0)\cdot t_{\text{ход}}$$</div>
+      <div class="cs" id="o_G0"></div>
+    </div>
+    <div class="calc-row hl">
+      <div class="cf">$$G = \mathrm{SFOC}\cdot t_{\text{ход}}\cdot
+      \frac{1}{T}\int_0^{T} P_B(\tau)\,d\tau$$</div>
+      <div class="cs" id="o_G"></div>
+    </div>
+    <div class="calc-row hl">
+      <div class="cf">$$\Delta G = G - G_0, \qquad
+      \text{стоимость} = \Delta G\cdot \text{цена}$$</div>
+      <div class="cs" id="o_dG"></div>
+    </div>
+  </div>
+
+  <h2>Шаг 5. Потеря скорости при постоянной мощности</h2>
+  <p>Судно чаще идёт не «на заданной скорости любой ценой», а на постоянной
+  мощности. Тогда обрастание проявляется как потеря хода. Из
+  \(P \propto C V^{3}\) при \(P = \mathrm{const}\):</p>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$\frac{V(T)}{V(0)} = \left(\frac{C(0)}{C(T)}\right)^{1/3}$$</div>
+      <div class="cs" id="o_V"></div>
+    </div>
+  </div>
+  <p class="small">Оценка приближённая: коэффициенты \(C_F\) и \(\Delta C_F\)
+  сами слабо зависят от скорости через число Рейнольдса, и здесь эта
+  зависимость не итерируется. Для инженерной оценки потери хода точности
+  достаточно.</p>
+
+  <h2>Темпы прироста шероховатости</h2>
+  <table class="t" id="tab_af"><tbody></tbody></table>
+  <p class="small">Значения ориентировочные и служат для сравнения вариантов.
+  Реальный темп зависит от района плавания, доли стояночного времени,
+  температуры воды и, что не менее важно, от качества нанесения покрытия:
+  сухой распыл, потёки и брызги дают собственный вклад в шероховатость, часто
+  больший, чем износ корпуса.</p>
+
+  <h2>Что дальше</h2>
+  <p>Биология процесса, стадии обрастания, шкалы оценки и устройство
+  противообрастающих покрытий — в <a href="t-fouling">главе 6</a>.
+  Толщина противообрастающих слоёв, задающая междоковый период, считается
+  на странице <a href="p-paint">«Расход краски»</a>. Оценка состояния корпуса
+  в доке — в <a href="t-monitoring">главе 7</a>. Гидромеханика трения и
+  шероховатости — в главе о
+  <a href="https://shadeswd.duckdns.org/mzg/t-boundary">пограничном слое</a>.</p>
+</main>
+<script src="assets/ccalc.js"></script>
+<script src="assets/p-fouling.js"></script>
+</body>
+</html>

@@ -1,0 +1,229 @@
+/* Коррозия и обрастание — стиль сайта */
+:root {
+  --bg: #f4f6f4;
+  --paper: #ffffff;
+  --ink: #1a1a1e;
+  --muted: #6b6b74;
+  --line: #d7dbd5;
+  --accent: #2f6f4f;
+  --accent2: #155e75;     /* тёмно-бирюзовый второго тела */
+  --green: #1a7f37;
+  --rust: #b3382e;
+  --chip: #e8ece7;
+  --link: #2b4fa0;
+  --shadow: 0 1px 3px rgba(20,20,30,.08), 0 8px 24px rgba(20,20,30,.06);
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body {
+  margin: 0; background-color: var(--bg); background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='128' height='96' viewBox='0 0 128 96'%3E%3Cg fill='none' stroke='%232f6f4f' opacity='0.12' stroke-width='1.2'%3E%3Cpath d='M0 26 q16 -9 32 0 q16 9 32 0 q16 -9 32 0 q16 9 32 0'/%3E%3Cpath d='M0 74 q16 -9 32 0 q16 9 32 0 q16 -9 32 0 q16 9 32 0'/%3E%3Ccircle cx='24' cy='50' r='4.5'/%3E%3Ccircle cx='64' cy='44' r='2.6'/%3E%3Ccircle cx='96' cy='54' r='3.4'/%3E%3Cpath d='M20 50 h8 M24 46 v8'/%3E%3Cpath d='M92 54 h8'/%3E%3C/g%3E%3C/svg%3E"); color: var(--ink);
+  font: 16px/1.55 Georgia, 'Times New Roman', serif;
+}
+a { color: var(--link); text-decoration-thickness: 1px; text-underline-offset: 2px; }
+a:hover { color: var(--accent); }
+code { font-family: ui-monospace, Consolas, monospace; font-size: .92em; background: var(--chip); padding: 1px 5px; border-radius: 4px; }
+
+.wrap { max-width: min(1600px, 96vw); margin: 0 auto; padding: 0 20px; }
+
+/* шапка */
+header.site {
+  background: var(--paper); border-bottom: 1px solid var(--line);
+  position: sticky; top: 0; z-index: 30;
+}
+header.site .wrap { display: flex; align-items: center; gap: 18px; min-height: 56px; flex-wrap: wrap; }
+.logo { display: flex; align-items: center; gap: 10px; font-weight: 700; text-decoration: none; color: var(--ink); font-size: 17px; }
+.logo svg { display: block; }
+nav.top { display: flex; gap: 4px 14px; flex-wrap: wrap; font-size: 15px; font-family: system-ui, sans-serif; }
+nav.top a { text-decoration: none; color: var(--muted); padding: 4px 2px; border-bottom: 2px solid transparent; }
+nav.top a.on, nav.top a:hover { color: var(--ink); border-bottom-color: var(--accent); }
+.nav-drop { position: relative; display: inline-block; }
+.nav-drop .drop {
+  display: none; position: absolute; left: -10px; top: 100%; z-index: 40;
+  background: var(--paper); border: 1px solid var(--line); border-radius: 10px;
+  box-shadow: var(--shadow); padding: 6px 0; min-width: 250px;
+}
+.nav-drop:hover .drop, .nav-drop:focus-within .drop { display: block; }
+.nav-drop .drop a {
+  display: block; padding: 7px 16px; border-bottom: none; white-space: nowrap;
+}
+.nav-drop .drop a:hover, .nav-drop .drop a.on { background: #eaf2ed; color: var(--ink); }
+
+h1 { font-size: 30px; line-height: 1.25; margin: 26px 0 6px; }
+h2 { font-size: 23px; margin: 34px 0 8px; }
+h3 { font-size: 18px; margin: 22px 0 6px; }
+.lead { font-size: 18px; color: #3d3d44; max-width: 60em; }
+.small, .muted { color: var(--muted); font-size: 14px; font-family: system-ui, sans-serif; }
+.note {
+  background: #fbf7ea; border: 1px solid #e7dcb8; border-radius: 10px;
+  padding: 10px 14px; margin: 14px 0; font-size: 15px;
+}
+.tip { background: #eef3ff; border-color: #c9d6f2; }
+.warn { background: #fdeeee; border-color: #eec6c2; }
+
+/* блок «Коротко» в начале каждой главы */
+.tldr {
+  background: #eaf2ed; border: 1px solid #bcd7c7; border-left: 5px solid var(--accent);
+  border-radius: 10px; padding: 12px 16px; margin: 16px 0 22px;
+}
+.tldr h2, .tldr h3 { margin: 0 0 6px; font: 700 15px system-ui, sans-serif;
+  text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+.tldr ul { margin: 6px 0 0; padding-left: 22px; }
+.tldr li { margin: 4px 0; }
+
+/* выключные формулы KaTeX: на узком экране прокручиваются внутри себя */
+.katex-display { overflow-x: auto; overflow-y: hidden; padding: 2px 0 6px; }
+.katex-display > .katex { white-space: nowrap; }
+/* KaTeX дублирует формулу в MathML и прячет дубль абсолютным позиционированием,
+   но без left/top: пустой бокс 1×1 остаётся в конце широкой строки формулы и на
+   узком экране растягивает документ по горизонтали. Прижимаем дубль к началу. */
+.katex-mathml { position: absolute; clip: rect(1px,1px,1px,1px); width: 1px; height: 1px; overflow: hidden; left: 0 !important; top: 0 !important; }
+
+/* карточки */
+.cards { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 16px; margin: 18px 0; }
+.card {
+  background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+  padding: 16px 18px; box-shadow: var(--shadow); display: flex; flex-direction: column; gap: 6px;
+}
+.card h3 { margin: 0; }
+.card p { margin: 0; font-size: 14.5px; color: #46464e; }
+.card .go { margin-top: auto; padding-top: 8px; font-family: system-ui, sans-serif; font-size: 14px; }
+.card.demo { border-left: 4px solid var(--accent); }
+
+/* панель с доской */
+.panel {
+  background: var(--paper); border: 1px solid var(--line); border-radius: 14px;
+  box-shadow: var(--shadow); padding: 14px; margin: 18px 0;
+}
+.panel .caption { font-size: 14px; color: var(--muted); font-family: system-ui, sans-serif; margin-top: 6px; }
+.caption { font-size: 14px; color: var(--muted); font-family: system-ui, sans-serif; margin: 6px 0 16px; max-width: 60em; }
+.boards { display: flex; gap: 14px; flex-wrap: wrap; align-items: flex-start; }
+.boards > div { flex: 1 1 340px; min-width: 0; }
+
+/* SVG-доска */
+svg.geo-board {
+  width: 100%; height: auto; display: block; max-width: 100%;
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  touch-action: none; user-select: none;
+}
+.ln { stroke: #16161a; stroke-width: 1.6; fill: none; stroke-linecap: round; stroke-linejoin: round; }
+.ln-thin { stroke: #16161a; stroke-width: 1; fill: none; }
+.ln-dash { stroke-dasharray: 6 5; }
+/* палитра схем: #16161a / #155e75 / #b3382e / #1a7f37 / #6b6b74 */
+.red  { stroke: #b3382e; }
+.blue { stroke: #155e75; }
+.green{ stroke: #1a7f37; }
+.gray { stroke: #6b6b74; }
+.fill-soft { fill: rgba(21,94,117,.07); }
+.fill-red  { fill: rgba(179,56,46,.09); }
+.fill-green{ fill: rgba(26,127,55,.10); }
+.fill-steel{ fill: #e4e6e2; }
+.pt { fill: #16161a; stroke: none; }
+.pt.red { fill: #b3382e; } .pt.blue { fill: #155e75; } .pt.green { fill: #1a7f37; }
+.pt.open { fill: #fff; stroke: #16161a; stroke-width: 1.4; }
+/* подписи схем: 11px system-ui */
+.cap { font: 11px system-ui, sans-serif; fill: #16161a; paint-order: stroke; stroke: #ffffffd0; stroke-width: 2.6px; }
+.cap.red { fill: #b3382e; } .cap.blue { fill: #155e75; } .cap.green { fill: #1a7f37; }
+.cap.gray { fill: #6b6b74; }
+.cap.b { font-weight: 600; }
+
+/* контролы */
+.btn {
+  border: 1px solid var(--line); background: var(--paper); border-radius: 8px;
+  padding: 6px 12px; font: 14px system-ui, sans-serif; cursor: pointer; color: var(--ink);
+}
+.btn:hover { border-color: var(--accent); color: var(--accent); }
+.btn.primary { background: var(--accent); border-color: var(--accent); color: #fff; }
+.btn.primary:hover { filter: brightness(1.1); color: #fff; }
+.badge { display: inline-block; border-radius: 999px; padding: 3px 12px; font: 600 13.5px system-ui, sans-serif; }
+.badge.ok { background: #e3f2e7; color: #17632f; border: 1px solid #bcdcc6; }
+.badge.bad { background: #fbe7e5; color: #9c2b22; border: 1px solid #eec6c2; }
+.readout { font: 600 14px ui-monospace, monospace; background: var(--chip); border-radius: 6px; padding: 2px 8px; }
+
+/* ссылки на теорию */
+.theory-link {
+  display: inline-block; background: #eaf2ed; border: 1px solid #bcd7c7; border-radius: 999px;
+  padding: 2px 12px; font: 13.5px system-ui, sans-serif; text-decoration: none; margin: 2px 2px;
+}
+.theory-link::before { content: '§ '; color: var(--accent); font-weight: 700; }
+
+/* хронология */
+.timeline { border-left: 3px solid var(--line); margin: 16px 0 16px 8px; padding-left: 22px; }
+.timeline .ev { margin: 14px 0; position: relative; }
+.timeline .ev::before {
+  content: ''; position: absolute; left: -29px; top: 6px; width: 11px; height: 11px;
+  border-radius: 50%; background: var(--accent); border: 2px solid var(--bg);
+}
+.timeline .when { font: 700 14px system-ui, sans-serif; color: var(--accent); }
+
+/* библиография */
+ol.bib { padding-left: 24px; }
+ol.bib li { margin: 10px 0; }
+ol.bib .bib-url { font: 13px system-ui, sans-serif; }
+
+/* подвал */
+footer.site { border-top: 1px solid var(--line); margin-top: 48px; padding: 22px 0 34px; color: var(--muted); font-size: 14px; font-family: system-ui, sans-serif; }
+footer.site .wrap { display: flex; flex-wrap: wrap; gap: 10px 30px; justify-content: space-between; }
+
+@media (max-width: 720px) {
+  h1 { font-size: 24px; }
+  .boards > div { flex-basis: 100%; }
+  header.site { position: static; }
+  nav.top { font-size: 14px; gap: 2px 12px; }
+}
+.dim { opacity: .32; }
+
+/* карточки-ссылки (оглавления) — без подчёркивания */
+a.card { text-decoration: none; color: inherit; }
+a.card:hover { border-color: var(--accent); }
+a.card h3 { text-decoration: none; }
+a.btn { text-decoration: none; display: inline-block; }
+a.btn.primary:hover { color: #fff; }
+
+/* живой расчёт: формула (KaTeX, статична) → подстановка → результат */
+.calc { margin: 14px 0; }
+.calc-row { margin: 12px 0; padding-left: 12px; border-left: 3px solid var(--line); }
+.calc-row .cf { margin: 0 0 2px; }
+.calc-row .cf .katex-display { margin: 6px 0; }
+.calc-row .cs {
+  font: 15px/1.6 ui-monospace, Consolas, monospace;
+  overflow-x: auto; white-space: nowrap; padding-bottom: 2px;
+}
+.calc-row .cs .sub { color: #6b6b74; }
+.calc-row .cs b { color: var(--ink); background: #fdf3d7; padding: 0 5px; border-radius: 4px; }
+.calc-row.hl { border-left-color: var(--accent); }
+.calc-row .why { font: 13.5px/1.5 system-ui, sans-serif; color: var(--muted); margin-top: 2px; white-space: normal; }
+
+/* поля ввода живых расчётов */
+.inp { display: grid; grid-template-columns: repeat(auto-fill, minmax(210px, 1fr)); gap: 10px 16px; margin: 12px 0; font-family: system-ui, sans-serif; font-size: 14px; }
+.inp label { display: flex; flex-direction: column; gap: 3px; }
+.inp label > span { color: var(--muted); font-size: 13px; }
+.inp input[type=number], .inp select, .inp input[type=text] {
+  font: 15px system-ui, sans-serif; padding: 5px 8px; border: 1px solid var(--line);
+  border-radius: 7px; background: #fff; color: var(--ink); min-width: 0; max-width: 100%;
+}
+.inp input:focus, .inp select:focus { outline: 2px solid var(--accent); outline-offset: -1px; }
+.inp .wide { grid-column: 1 / -1; }
+
+/* таблицы */
+table.t { border-collapse: collapse; margin: 14px 0; font: 14.5px/1.45 system-ui, sans-serif; width: 100%; }
+table.t th, table.t td { border: 1px solid var(--line); padding: 6px 10px; text-align: left; vertical-align: top; }
+table.t th { background: var(--chip); font-weight: 600; }
+table.t td.n, table.t th.n { text-align: right; font-variant-numeric: tabular-nums; }
+table.t tr.on td { background: #fdf3d7; }
+.tscroll { overflow-x: auto; max-width: 100%; }
+
+/* живая сводка результатов расчёта */
+.live-sum { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 12px; }
+.live-sum .cell {
+  background: #fff; border: 1px solid var(--line); border-radius: 10px;
+  padding: 7px 12px; min-width: 120px; font-family: system-ui, sans-serif;
+  transition: background .5s, border-color .5s;
+}
+.live-sum .cell .k { font-size: 12px; color: var(--muted); display: block; }
+.live-sum .cell .v { font-size: 17px; font-weight: 700; color: var(--ink); }
+.live-sum .cell.upd { background: #fdf3d7; border-color: #e7dcb8; transition: none; }
+
+/* мобильная защита от горизонтального переполнения */
+main table { display: block; max-width: 100%; overflow-x: auto; }
+main .readout, main .caption, main .small { overflow-wrap: anywhere; }
+main .note div, main .note span { overflow-wrap: anywhere; }

@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Расчёт расхода краски: толщина плёнки, сухой остаток, потери, число слоёв</title>
+<meta name="description" content="Живой расчёт расхода лакокрасочных материалов: площадь окрашиваемой поверхности по главным размерениям, толщина мокрой и сухой плёнки, объёмное содержание сухого остатка, теоретическая укрывистость, «мёртвый объём» шероховатости, коэффициент потерь, число слоёв и общая потребность в краске и растворителе.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧪</text></svg>">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<script src="assets/site.js" data-root="./" data-page="p-paint"></script>
+<main class="wrap">
+  <h1>Расчёт расхода краски</h1>
+  <p class="lead">Нормируется толщина сухой плёнки, а покупается объём жидкой
+  краски — и между этими двумя величинами стоят три поправки: объёмное
+  содержание сухого остатка, «мёртвый объём» профиля шероховатости и
+  технологические потери. Каждая из них увеличивает расход, и вместе они легко
+  дают двукратную разницу с «теоретическим» числом. Расчёт ведётся по формулам
+  книги инспектора окрасочных работ.</p>
+
+  <div class="tldr">
+    <h2>Коротко</h2>
+    <ul>
+      <li>\(\mathrm{WFT} = \mathrm{DFT}\cdot 100/\%s.v.\) — толщина мокрой
+      плёнки, которую надо получить гребёнкой, чтобы после высыхания вышла
+      заданная сухая.</li>
+      <li>\(\mathrm{TSR} = 10\,\%s.v./\mathrm{DFT}\) — теоретическая
+      укрывистость в м²/л; обратная величина — теоретический расход в л/м².</li>
+      <li>«Мёртвый объём» \(dv\) — краска, ушедшая во впадины профиля: от
+      0,02 л/м² при Ry 30 мкм до 0,07 л/м² при Ry 105 мкм. В толщину она не
+      входит, в расход входит, и относится к <b>первому</b> слою.</li>
+      <li>Практический удельный расход:
+      \(q = \dfrac{dv + \mathrm{DFT}}{10\,\%s.v.}\cdot\dfrac{100}{100 - Z}\)
+      при \(dv\) и DFT в микрометрах.</li>
+    </ul>
+  </div>
+
+  <h2>Исходные данные</h2>
+  <div class="panel">
+    <div class="inp" id="in">
+      <label><span>Что окрашиваем</span>
+        <select id="mode">
+          <option value="direct" selected>площадь задана напрямую</option>
+          <option value="bottom">днище с ППВЛ</option>
+          <option value="belt">пояс переменных ватерлиний</option>
+          <option value="side">надводный борт</option>
+          <option value="deck">открытая палуба</option>
+        </select></label>
+      <label><span>Площадь S, м²</span>
+        <input type="number" id="S" value="21000" step="100" min="1" max="500000"></label>
+      <label><span>Длина между перпендикулярами L<sub>pp</sub>, м</span>
+        <input type="number" id="Lpp" value="180" step="1" min="5" max="450"></label>
+      <label><span>Длина наибольшая L<sub>oa</sub>, м</span>
+        <input type="number" id="Loa" value="190" step="1" min="5" max="470"></label>
+      <label><span>Ширина B, м</span>
+        <input type="number" id="B" value="32" step="0.5" min="2" max="70"></label>
+      <label><span>Осадка d, м</span>
+        <input type="number" id="d" value="12" step="0.1" min="0.5" max="30"></label>
+      <label><span>Высота надводного борта H, м</span>
+        <input type="number" id="H" value="8" step="0.1" min="0.5" max="30"></label>
+      <label><span>Ширина ППВЛ h, м</span>
+        <input type="number" id="hb" value="3" step="0.1" min="0.2" max="10"></label>
+      <label><span>Коэффициент P (днище)</span>
+        <select id="P">
+          <option value="0.90" selected>0,90 — крупные танкеры</option>
+          <option value="0.85">0,85 — балкеры</option>
+          <option value="0.73">0,73 — сухогрузы</option>
+        </select></label>
+      <label><span>Коэффициент N (палуба)</span>
+        <select id="N">
+          <option value="0.92" selected>0,92 — крупные танкеры и балкеры</option>
+          <option value="0.88">0,88 — линейные суда</option>
+          <option value="0.84">0,84 — каботажные</option>
+        </select></label>
+
+      <label><span>Толщина одного слоя DFT, мкм</span>
+        <input type="number" id="dft" value="20" step="5" min="10" max="500"></label>
+      <label><span>Требуемая толщина системы Σ DFT, мкм</span>
+        <input type="number" id="dfts" value="20" step="10" min="10" max="2000"></label>
+      <label><span>Объёмный сухой остаток s.v., %</span>
+        <input type="number" id="sv" value="28" step="1" min="5" max="100"></label>
+      <label><span>Технологические потери Z, %</span>
+        <input type="number" id="Z" value="20" step="5" min="0" max="60"></label>
+      <label><span>Шероховатость после очистки Ry, мкм</span>
+        <input type="number" id="Ry" value="45" step="5" min="0" max="150"></label>
+      <label><span>Учитывать «мёртвый объём»</span>
+        <select id="usedv">
+          <option value="first" selected>да, для первого слоя</option>
+          <option value="all">да, для всех слоёв</option>
+          <option value="no">нет (окраска по старому покрытию)</option>
+        </select></label>
+      <label><span>Расход растворителя, % от количества краски</span>
+        <input type="number" id="sol" value="15" step="1" min="0" max="40"></label>
+    </div>
+
+    <div class="boards">
+      <div>
+        <svg viewBox="0 0 640 300" class="geo-board" style="max-width:640px" id="board"></svg>
+        <div class="caption">Слева — схема системы в масштабе толщин, справа —
+        из чего складывается удельный расход первого слоя: собственно плёнка,
+        «мёртвый объём» профиля и технологические потери.</div>
+      </div>
+      <div>
+        <div class="live-sum" id="sum"></div>
+        <div id="verdict" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Шаг 1. Площадь окрашиваемой поверхности</h2>
+  <p>Оценочные формулы книги инспектора: точность подсчёта зависит от
+  правильности выбора коэффициентов \(P\) и \(N\), которые выражают отношение
+  реальной площади к ограничивающему её прямоугольнику.</p>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$\begin{aligned}
+        A_{\text{днище}} &amp;= (2d + B)\,L_{pp}\,P, &amp;
+        A_{\text{ППВЛ}} &amp;= 2h\,(L_{pp} + 0{,}5B),\\
+        A_{\text{борт}} &amp;= 2H\,(L_{oa} + 0{,}5B), &amp;
+        A_{\text{палуба}} &amp;= L_{oa}\,B\,N
+      \end{aligned}$$</div>
+      <div class="cs" id="o_S"></div>
+    </div>
+  </div>
+
+  <h2>Шаг 2. Мокрая и сухая плёнка</h2>
+  <p>Гребёнкой контролируют мокрую плёнку сразу после нанесения — это
+  единственная возможность поправить маляра, пока краска не встала.</p>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$\mathrm{WFT} = \frac{\mathrm{DFT}\cdot 100}{\%s.v.}$$</div>
+      <div class="cs" id="o_wft"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Обратный пересчёт — что получится из фактически
+      нанесённой мокрой плёнки:
+      $$\mathrm{DFT} = \frac{\mathrm{WFT}\cdot \%s.v.}{100}$$</div>
+      <div class="cs" id="o_back"></div>
+    </div>
+  </div>
+
+  <h2>Шаг 3. Теоретическая укрывистость</h2>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$\mathrm{TSR} = \frac{10\,\%s.v.}{\mathrm{DFT}}
+      \ \left[\frac{\text{м}^2}{\text{л}}\right]$$</div>
+      <div class="cs" id="o_tsr"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">$$q_{\text{теор}} = \frac{1}{\mathrm{TSR}}
+      \ \left[\frac{\text{л}}{\text{м}^2}\right]$$</div>
+      <div class="cs" id="o_qt"></div>
+    </div>
+  </div>
+
+  <h2>Шаг 4. «Мёртвый объём» профиля</h2>
+  <p>Величина берётся по шероховатости, полученной после абразивоструйной
+  очистки. Удобная эквивалентность: 0,03 л/м² — это ровно 30 мкм краски,
+  «размазанной» по квадратному метру, поэтому «мёртвый объём» можно
+  складывать с толщиной плёнки прямо в микрометрах.</p>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$dv = dv(R_y)$$</div>
+      <div class="cs" id="o_dv"></div>
+    </div>
+  </div>
+  <table class="t" id="tab_dv"><tbody></tbody></table>
+
+  <h2>Шаг 5. Практический удельный расход</h2>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$q = \frac{dv + \mathrm{DFT}}{10\,\%s.v.}
+      \cdot\frac{100}{100 - Z}$$</div>
+      <div class="cs" id="o_q1"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Для последующих слоёв профиль уже заполнен:
+      $$q_{2\ldots n} = \frac{\mathrm{DFT}}{10\,\%s.v.}\cdot\frac{100}{100 - Z}$$</div>
+      <div class="cs" id="o_q2"></div>
+    </div>
+  </div>
+
+  <h2>Шаг 6. Число слоёв и общая потребность</h2>
+  <div class="calc">
+    <div class="calc-row">
+      <div class="cf">$$n = \left\lceil \frac{\Sigma \mathrm{DFT}}{\mathrm{DFT}} \right\rceil$$</div>
+      <div class="cs" id="o_n"></div>
+    </div>
+    <div class="calc-row hl">
+      <div class="cf">$$Q = S\left[q_1 + (n-1)\,q_{2\ldots n}\right]$$</div>
+      <div class="cs" id="o_Q"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Растворитель: $$Q_{\text{р}} = Q\cdot \frac{\text{доля}}{100}$$</div>
+      <div class="cs" id="o_sol"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Фактическая толщина системы: $$\Sigma \mathrm{DFT}_{\text{факт}} = n\,\mathrm{DFT}$$</div>
+      <div class="cs" id="o_dfts"></div>
+    </div>
+  </div>
+
+  <h2>Шаг 7. Контроль толщины</h2>
+  <p>Число замеров толщины покрытия нормируется площадью участка; замеры
+  обязательно должны попадать на кромки, сварные швы и углы, где плёнка
+  утоняется, — там же выполняются полосовые слои.</p>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">Минимальное число замеров по площади участка</div>
+      <div class="cs" id="o_meas"></div>
+    </div>
+  </div>
+
+  <h2>Проверка расчёта по эталонному примеру</h2>
+  <p>Значения по умолчанию воспроизводят пример расчёта количества грунта из
+  книги инспектора: площадь 21 000 м², степень очистки Sa 2,5, «мёртвый объём»
+  30 см³/м² (что отвечает шероховатости 45 мкм по таблице раздела 20), сухой
+  остаток грунта 28 %, рекомендованная толщина 20 мкм, технологические потери
+  20 %, расход растворителя 15 %. Ответ книги: удельный расход
+  <b>0,223 л/м²</b>, грунта <b>4600 л</b>, растворителя <b>690 л</b>. Расчёт
+  на этой странице даёт те же 0,223 л/м²; итоговые объёмы получаются
+  чуть больше (около 4690 и 700 л) — в книге они округлены вниз. Если после
+  экспериментов с полями захочется вернуться к эталону, перезагрузите
+  страницу.</p>
+
+  <h2>Что дальше</h2>
+  <p>Теория — в <a href="t-paint">главе 5</a>: состав краски, механизмы
+  плёнкообразования, степени очистки по ISO 8501-1, типы грунтов, дефекты
+  покрытий и контроль качества. Схема многослойного покрытия подводной части
+  и роль каждого слоя — там же. Противообрастающие слои, толщина которых
+  напрямую задаёт междоковый период, — в <a href="t-fouling">главе 6</a>;
+  оценка состояния покрытия в эксплуатации — в
+  <a href="t-monitoring">главе 7</a>. Организация окрасочных работ в
+  постройке судна — в курсе
+  <a href="https://shadeswd.duckdns.org/shiptech/">технологии судостроения</a>.</p>
+</main>
+<script src="assets/ccalc.js"></script>
+<script src="assets/p-paint.js"></script>
+</body>
+</html>

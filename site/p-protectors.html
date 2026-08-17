@@ -1,0 +1,241 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Расчёт протекторной защиты: ток, масса и число протекторов</title>
+<meta name="description" content="Живой расчёт протекторной защиты корпуса судна: площадь защищаемой поверхности, плотность защитного тока, ток защиты, требуемая масса протекторного сплава по сроку службы, число протекторов по массе и по токоотдаче одного протектора, сопротивление растеканию анода.">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🧪</text></svg>">
+<link rel="stylesheet" href="assets/style.css">
+</head>
+<body>
+<script src="assets/site.js" data-root="./" data-page="p-protectors"></script>
+<main class="wrap">
+  <h1>Расчёт протекторной защиты</h1>
+  <p class="lead">Расчёт состоит из двух независимых условий, и выполнены
+  должны быть оба. Первое — <b>энергетическое</b>: протекторов должно хватить
+  по массе на весь назначенный срок службы. Второе — <b>токовое</b>: они
+  должны быть способны отдать нужный ток здесь и сейчас, иначе потенциал
+  корпуса не сместится в защитный коридор, сколько бы металла ни висело на
+  обшивке. Число протекторов — большее из двух.</p>
+
+  <div class="tldr">
+    <h2>Коротко</h2>
+    <ul>
+      <li>Ток защиты \(I = i\,S\) — плотность защитного тока умножить на
+      площадь; \(i\) назначают по состоянию покрытия и району плавания.</li>
+      <li>Масса сплава \(M = I\,T\,8760/(q\,k_{\text{и}})\), где \(q\) —
+      фактическая токоотдача сплава, А·ч/кг.</li>
+      <li>Токоотдача одного протектора \(I_1 = \Delta E/R_{\text{а}}\), где
+      \(R_{\text{а}} = 0{,}315\,\rho/\sqrt{A_{\text{а}}}\) — сопротивление
+      растеканию плоского прилегающего анода.</li>
+      <li>Итог — \(n = \max(n_m,\ n_i)\) с округлением вверх.</li>
+    </ul>
+  </div>
+
+  <h2>Исходные данные</h2>
+  <div class="panel">
+    <div class="inp" id="in">
+      <label><span>Как задать площадь</span>
+        <select id="mode">
+          <option value="direct" selected>задать площадь напрямую</option>
+          <option value="ship">рассчитать по главным размерениям</option>
+        </select></label>
+      <label><span>Площадь защищаемой поверхности S, м²</span>
+        <input type="number" id="S" value="2500" step="50" min="1" max="200000"></label>
+      <label><span>Длина между перпендикулярами L<sub>pp</sub>, м</span>
+        <input type="number" id="Lpp" value="120" step="1" min="5" max="450"></label>
+      <label><span>Ширина B, м</span>
+        <input type="number" id="B" value="18" step="0.5" min="2" max="70"></label>
+      <label><span>Осадка d, м</span>
+        <input type="number" id="d" value="7" step="0.1" min="0.5" max="30"></label>
+      <label><span>Коэффициент P (тип судна)</span>
+        <select id="P">
+          <option value="0.90">0,90 — крупные танкеры</option>
+          <option value="0.85">0,85 — балкеры</option>
+          <option value="0.73" selected>0,73 — сухогрузы</option>
+        </select></label>
+
+      <label><span>Состояние поверхности → плотность тока</span>
+        <select id="idens"></select></label>
+      <label><span>Плотность защитного тока i, мА/м²</span>
+        <input type="number" id="i" value="30" step="1" min="1" max="1000"></label>
+      <label><span>Назначенный срок службы T, годы</span>
+        <input type="number" id="T" value="4" step="0.5" min="0.5" max="30"></label>
+
+      <label><span>Марка протекторного сплава</span>
+        <select id="alloy"></select></label>
+      <label><span>Фактическая токоотдача q, А·ч/кг</span>
+        <input type="number" id="q" value="2450" step="10" min="100" max="4000"></label>
+      <label><span>Коэффициент использования k<sub>и</sub></span>
+        <input type="number" id="ku" value="0.85" step="0.05" min="0.3" max="1"></label>
+      <label><span>Масса одного протектора m₁, кг</span>
+        <input type="number" id="m1" value="13" step="1" min="1" max="120"></label>
+      <label><span>Рабочая длина протектора a, м</span>
+        <input type="number" id="pa" value="0.85" step="0.05" min="0.1" max="3"></label>
+      <label><span>Рабочая ширина протектора b, м</span>
+        <input type="number" id="pb" value="0.15" step="0.01" min="0.03" max="1"></label>
+
+      <label><span>Акватория → удельное сопротивление воды</span>
+        <select id="water"></select></label>
+      <label><span>Удельное сопротивление воды ρ, Ом·м</span>
+        <input type="number" id="rho" value="0.25" step="0.01" min="0.1" max="20"></label>
+      <label><span>Рабочий потенциал сплава ε<sub>а</sub>, В</span>
+        <input type="number" id="ea" value="-0.85" step="0.01" min="-1.5" max="-0.3"></label>
+      <label><span>Защитный потенциал стали ε<sub>защ</sub>, В</span>
+        <input type="number" id="ez" value="-0.55" step="0.01" min="-0.9" max="-0.3"></label>
+    </div>
+
+    <div class="boards">
+      <div>
+        <svg viewBox="0 0 640 300" class="geo-board" style="max-width:640px" id="board"></svg>
+        <div class="caption">Схема размещения: прямоугольник в масштабе
+        защищаемой площади, точки — протекторы, разнесённые равномерно.
+        Реальная расстановка учитывает районы повышенного тока (перо руля,
+        кронштейны, район винта) и зоны действия соседних анодов.</div>
+      </div>
+      <div>
+        <div class="live-sum" id="sum"></div>
+        <div id="verdict" style="margin-top:12px"></div>
+      </div>
+    </div>
+  </div>
+
+  <h2>Шаг 1. Площадь защищаемой поверхности</h2>
+  <p>Если площадь не снята с чертежа, для днища вместе с поясом переменных
+  ватерлиний пользуются оценочной формулой книги инспектора; коэффициент
+  \(P\) учитывает полноту обводов.</p>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$A = (2d + B)\,L_{pp}\,P$$</div>
+      <div class="cs" id="o_S"></div>
+    </div>
+  </div>
+
+  <h2>Шаг 2. Ток защиты</h2>
+  <p>Плотность защитного тока — главное проектное допущение всего расчёта.
+  Она отражает не «сколько нужно металлу», а <b>сколько тока придётся подать
+  на квадратный метр с учётом ожидаемого разрушения покрытия</b>. Для
+  сравнения: собственный ток коррозии голой стали при 0,12 мм/год составляет
+  около 103 мА/м² (см. <a href="t-electro">главу 2</a>).</p>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$I = \frac{i\,S}{1000}$$</div>
+      <div class="cs" id="o_I"></div>
+    </div>
+  </div>
+  <table class="t" id="tab_i"><tbody></tbody></table>
+
+  <h2>Шаг 3. Требуемая масса протекторного сплава</h2>
+  <p>Закон Фарадея, записанный через фактическую токоотдачу сплава \(q\)
+  [А·ч/кг]: сколько ампер-часов способен отдать килограмм. Коэффициент
+  использования \(k_{\text{и}}\) учитывает, что к концу срока протектор
+  теряет форму и часть металла отваливается, не отработав.</p>
+  <div class="calc">
+    <div class="calc-row">
+      <div class="cf">Требуемый заряд: $$Q = I\,T\cdot 8760$$</div>
+      <div class="cs" id="o_Q"></div>
+    </div>
+    <div class="calc-row hl">
+      <div class="cf">$$M = \frac{I\,T\cdot 8760}{q\,k_{\text{и}}}$$</div>
+      <div class="cs" id="o_M"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Число протекторов по массе: $$n_m = \left\lceil \frac{M}{m_1} \right\rceil$$</div>
+      <div class="cs" id="o_nm"></div>
+    </div>
+  </div>
+  <table class="t" id="tab_alloy"><tbody></tbody></table>
+
+  <h2>Шаг 4. Токоотдача одного протектора</h2>
+  <p>Ток, который реально отдаёт протектор, определяется движущим напряжением
+  и сопротивлением растеканию тока с его поверхности в воду. Для плоского
+  анода, прилегающего к корпусу, пользуются формулой Мак-Коя, где
+  \(A_{\text{а}}\) — площадь открытой рабочей поверхности:</p>
+  <div class="calc">
+    <div class="calc-row">
+      <div class="cf">Движущее напряжение: $$\Delta E = \varepsilon_{\text{защ}} - \varepsilon_{\text{а}}$$</div>
+      <div class="cs" id="o_dE"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Сопротивление растеканию: $$R_{\text{а}} = \frac{0{,}315\,\rho}{\sqrt{A_{\text{а}}}}$$</div>
+      <div class="cs" id="o_Ra"></div>
+    </div>
+    <div class="calc-row hl">
+      <div class="cf">$$I_1 = \frac{\Delta E}{R_{\text{а}}}$$</div>
+      <div class="cs" id="o_I1"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Число протекторов по току: $$n_i = \left\lceil \frac{I}{I_1} \right\rceil$$</div>
+      <div class="cs" id="o_ni"></div>
+    </div>
+  </div>
+  <div class="note tip">Видно, зачем в справочниках указывают <b>рабочий
+  потенциал</b> сплава, а не только токоотдачу. Магниевый МП1 при −1,21 В даёт
+  движущее напряжение почти втрое больше алюминиевого АП4Н — и потому годится
+  для пресной и солоноватой воды, где велико \(\rho\). Но на окрашенном
+  стальном корпусе он же загоняет потенциал в область перезащиты
+  (отрицательнее −0,85 В), где начинается отслаивание покрытия и
+  наводороживание, — поэтому магниевые протекторы ставят через регулировочные
+  сопротивления.</div>
+
+  <h2>Шаг 5. Итог и проверки</h2>
+  <div class="calc">
+    <div class="calc-row hl">
+      <div class="cf">$$n = \max(n_m,\ n_i)$$</div>
+      <div class="cs" id="o_n"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Площадь, приходящаяся на один протектор:
+      $$S_1 = \frac{S}{n}$$</div>
+      <div class="cs" id="o_S1"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Суммарная установленная масса: $$M_{\text{уст}} = n\,m_1$$</div>
+      <div class="cs" id="o_Mu"></div>
+    </div>
+    <div class="calc-row">
+      <div class="cf">Фактический запас по току:
+      $$k_I = \frac{n\,I_1}{I}$$</div>
+      <div class="cs" id="o_kI"></div>
+    </div>
+  </div>
+
+  <h2>Контрольные ориентиры</h2>
+  <p>Ниже — реальные значения из практики проектирования, с которыми полезно
+  сверять результат.</p>
+  <table class="t">
+    <thead><tr><th>Объект</th><th>Норматив</th></tr></thead>
+    <tbody>
+      <tr><td>Днище кессона МЛСП «Приразломная» (без окраски)</td>
+        <td>один плоский протектор П-КЛА-15 на 4 м²</td></tr>
+      <tr><td>Внутренняя поверхность резервуаров для нефти, днище</td>
+        <td>один протектор ЦП1 типа П-КОЦ-36 на 8 м²</td></tr>
+      <tr><td>То же, боковые стенки и нижние поверхности крыш</td>
+        <td>один протектор на 12 м²</td></tr>
+      <tr><td>Цистерны, предназначенные только для морской воды</td>
+        <td>один протектор на 8 м²</td></tr>
+      <tr><td>Неокрашенный балластируемый танк, П-КОА-12, судно
+        неограниченного района</td><td>7,5 м² на протектор, срок службы 9 лет</td></tr>
+      <tr><td>То же для судов внутреннего плавания (Каспий, Чёрное, Белое,
+        Азовское моря)</td><td>4,0 м² на протектор, срок службы 15 лет</td></tr>
+    </tbody>
+  </table>
+  <p class="small">Разница между последними двумя строками показывает роль
+  района плавания: в менее солёной и более холодной воде тот же протектор
+  отдаёт меньший ток (больше \(\rho\), выше \(R_{\text{а}}\)), поэтому
+  защищает меньшую площадь — зато и служит дольше.</p>
+
+  <h2>Что дальше</h2>
+  <p>Теория этого расчёта — в <a href="t-protect">главе 4</a>: принципы
+  электрохимической защиты, марки протекторных сплавов по ГОСТ 26251-84,
+  распределение потенциала по корпусу и альтернатива в виде катодной защиты
+  наложенным током. Скорости коррозии, которые защита должна остановить, —
+  в <a href="t-electro">главе 2</a> и <a href="t-types">главе 3</a>.
+  Состояние покрытия, от которого зависит выбранная плотность тока, — в
+  <a href="t-monitoring">главе 7</a>.</p>
+</main>
+<script src="assets/ccalc.js"></script>
+<script src="assets/p-protectors.js"></script>
+</body>
+</html>
