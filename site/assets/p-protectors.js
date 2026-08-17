@@ -1,8 +1,6 @@
 /* Живой расчёт протекторной защиты. */
 'use strict';
 (function () {
-  const f = C.f, el = C.el, num = C.num, val = C.val;
-
   /* заполнение выпадающих списков */
   el('idens').innerHTML = Object.keys(C.IDENS)
     .map((k) => `<option value="${k}"${k === 'coat_mid' ? ' selected' : ''}>` +
@@ -53,55 +51,55 @@
     const Lpp = num('Lpp'), B = num('B'), d = num('d'), P = parseFloat(val('P'));
     const S = shipMode ? C.areaBottom(d, B, Lpp, P) : num('S');
     if (shipMode) {
-      C.out('o_S', 'A = ', `(2·${f(d, 1)} + ${f(B, 1)})·${f(Lpp, 0)}·${f(P, 2)}`,
+      out('o_S', 'A = ', `(2·${f(d, 1)} + ${f(B, 1)})·${f(Lpp, 0)}·${f(P, 2)}`,
         f(S, 0) + ' м²');
     } else {
-      C.out('o_S', 'S = ', 'задано напрямую', f(S, 0) + ' м²',
+      out('o_S', 'S = ', 'задано напрямую', f(S, 0) + ' м²',
         'Переключите способ задания площади, чтобы посчитать её по главным размерениям.');
     }
 
     const i = num('i'), T = num('T');
     const I = C.protCurrent(i, S);
-    C.out('o_I', 'I = ', `${f(i, 0)}·${f(S, 0)}/1000`, f(I, 1) + ' А');
+    out('o_I', 'I = ', `${f(i, 0)}·${f(S, 0)}/1000`, f(I, 1) + ' А');
 
     const q = num('q'), ku = num('ku'), m1 = num('m1');
     const Q = I * T * 8760;
-    C.out('o_Q', 'Q = ', `${f(I, 1)}·${f(T, 1)}·8760`, f(Q, 0) + ' А·ч');
+    out('o_Q', 'Q = ', `${f(I, 1)}·${f(T, 1)}·8760`, f(Q, 0) + ' А·ч');
     const M = C.protMass(I, T, q, ku);
-    C.out('o_M', 'M = ', `${f(I, 1)}·${f(T, 1)}·8760/(${f(q, 0)}·${f(ku, 2)})`,
+    out('o_M', 'M = ', `${f(I, 1)}·${f(T, 1)}·8760/(${f(q, 0)}·${f(ku, 2)})`,
       f(M, 0) + ' кг');
     const nm = Math.max(1, Math.ceil(M / m1));
-    C.out('o_nm', 'n_m = ', `⌈${f(M, 0)}/${f(m1, 0)}⌉`,
-      nm + ' ' + C.plural(nm, 'протектор', 'протектора', 'протекторов'));
+    out('o_nm', 'n_m = ', `⌈${f(M, 0)}/${f(m1, 0)}⌉`,
+      nm + ' ' + plural(nm, 'протектор', 'протектора', 'протекторов'));
 
     const ez = num('ez'), ea = num('ea'), rho = num('rho');
     const pa = num('pa'), pb = num('pb');
     const Aa = pa * pb;
     const dE = ez - ea;
-    C.out('o_dE', 'ΔE = ', `${f(ez, 2)} − (${f(ea, 2)})`, f(dE, 3) + ' В');
+    out('o_dE', 'ΔE = ', `${f(ez, 2)} − (${f(ea, 2)})`, f(dE, 3) + ' В');
     const Ra = C.anodeR(rho, Aa);
-    C.out('o_Ra', 'R_а = ', `0,315·${f(rho, 2)}/√${f(Aa, 4)}`, f(Ra, 3) + ' Ом',
+    out('o_Ra', 'R_а = ', `0,315·${f(rho, 2)}/√${f(Aa, 4)}`, f(Ra, 3) + ' Ом',
       `Площадь рабочей поверхности протектора A_а = ${f(pa, 2)}·${f(pb, 2)} = ${f(Aa, 4)} м².`);
     const I1 = dE > 0 ? C.anodeI(dE, Ra) : 0;
-    C.out('o_I1', 'I₁ = ', `${f(dE, 3)}/${f(Ra, 3)}`, f(I1, 3) + ' А');
+    out('o_I1', 'I₁ = ', `${f(dE, 3)}/${f(Ra, 3)}`, f(I1, 3) + ' А');
     const ni = I1 > 0 ? Math.max(1, Math.ceil(I / I1)) : Infinity;
-    C.out('o_ni', 'n_i = ', I1 > 0 ? `⌈${f(I, 1)}/${f(I1, 3)}⌉` : '—',
-      isFinite(ni) ? ni + ' ' + C.plural(ni, 'протектор', 'протектора', 'протекторов') : '—');
+    out('o_ni', 'n_i = ', I1 > 0 ? `⌈${f(I, 1)}/${f(I1, 3)}⌉` : '—',
+      isFinite(ni) ? ni + ' ' + plural(ni, 'протектор', 'протектора', 'протекторов') : '—');
 
     const n = isFinite(ni) ? Math.max(nm, ni) : nm;
-    C.out('o_n', 'n = ', `max(${nm}; ${isFinite(ni) ? ni : '—'})`,
-      n + ' ' + C.plural(n, 'протектор', 'протектора', 'протекторов'),
+    out('o_n', 'n = ', `max(${nm}; ${isFinite(ni) ? ni : '—'})`,
+      n + ' ' + plural(n, 'протектор', 'протектора', 'протекторов'),
       nm >= ni ? 'Определяющее условие — <b>масса</b>: срок службы задаёт число протекторов.'
         : 'Определяющее условие — <b>ток</b>: массы хватило бы, но протекторы не в состоянии отдать нужный ток.');
     const S1 = S / n;
-    C.out('o_S1', 'S₁ = ', `${f(S, 0)}/${n}`, f(S1, 1) + ' м² на протектор');
+    out('o_S1', 'S₁ = ', `${f(S, 0)}/${n}`, f(S1, 1) + ' м² на протектор');
     const Mu = n * m1;
-    C.out('o_Mu', 'M_уст = ', `${n}·${f(m1, 0)}`, f(Mu, 0) + ' кг = ' + f(Mu / 1000, 2) + ' т');
+    out('o_Mu', 'M_уст = ', `${n}·${f(m1, 0)}`, f(Mu, 0) + ' кг = ' + f(Mu / 1000, 2) + ' т');
     const kI = I > 0 ? n * I1 / I : 0;
-    C.out('o_kI', 'k_I = ', `${n}·${f(I1, 3)}/${f(I, 1)}`, f(kI, 2),
+    out('o_kI', 'k_I = ', `${n}·${f(I1, 3)}/${f(I, 1)}`, f(kI, 2),
       'Отношение суммарной токоотдачи к требуемому току; при k_I заметно больше единицы протекторы прослужат дольше расчётного срока.');
 
-    C.summary('sum', [
+    summary('sum', [
       { k: 'Площадь S', v: f(S, 0) + ' м²' },
       { k: 'Ток защиты I', v: f(I, 1) + ' А' },
       { k: 'Масса сплава M', v: f(M, 0) + ' кг' },
@@ -178,7 +176,7 @@
     const svg = el('board');
     svg.innerHTML = `
       <text x="20" y="24" class="cap b">размещение протекторов на защищаемой поверхности</text>
-      <text x="20" y="42" class="cap gray">площадь ${C.f(S, 0)} м², протекторов ${n}, на каждый приходится ${C.f(S / n, 1)} м²</text>
+      <text x="20" y="42" class="cap gray">площадь ${f(S, 0)} м², протекторов ${n}, на каждый приходится ${f(S / n, 1)} м²</text>
       <rect x="${x0}" y="${y0}" width="${w}" height="${h}" fill="rgba(21,94,117,.08)"
         stroke="#155e75" stroke-width="1.4"/>
       ${dots.map(([x, y]) =>
@@ -189,5 +187,5 @@
       <text x="20" y="288" class="cap gray">корпусе это порядка 20 м, на голой стали — около 5 м (см. главу 4).</text>`;
   }
 
-  C.bind('in', run);
+  bind('in', run);
 })();

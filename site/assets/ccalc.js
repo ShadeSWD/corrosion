@@ -1,76 +1,11 @@
-/* ccalc.js — общая расчётная библиотека сайта «Коррозия и обрастание».
- * Чистые функции (без DOM) + помощники вывода «формула = подстановка = результат».
+/* ccalc.js — расчётная библиотека сайта «Коррозия и обрастание»: справочные
+ * таблицы и чистые функции предметной области (без DOM).
+ * Общие помощники вывода вынесены в common.js.
  * Подключается перед скриптом конкретной страницы. */
 'use strict';
 window.C = (function () {
 
-  /* ---------- форматирование ---------- */
-  function f(x, dec) {
-    if (x === null || x === undefined || !isFinite(x)) return '—';
-    if (dec === undefined) {
-      const a = Math.abs(x);
-      dec = a >= 1000 ? 0 : a >= 100 ? 1 : a >= 10 ? 2 : a >= 1 ? 3 : 4;
-    }
-    return x.toFixed(dec).replace('.', ',').replace('-', '−');
-  }
-  function plural(n, one, few, many) {
-    const a = Math.abs(n) % 100, b = a % 10;
-    if (a > 10 && a < 20) return many;
-    if (b > 1 && b < 5) return few;
-    if (b === 1) return one;
-    return many;
-  }
-  const fr = (a, b, dec) => f(a, dec) + '…' + f(b, dec);
-  const el = (id) => document.getElementById(id);
-  const num = (id) => parseFloat(String(el(id).value).replace(',', '.')) || 0;
-  const val = (id) => el(id).value;
-  const setText = (id, s) => { const n = el(id); if (n) n.textContent = s; };
-  const setHtml = (id, s) => { const n = el(id); if (n) n.innerHTML = s; };
-  function esc(s) {
-    return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-  }
-  /* Строка живого расчёта: подстановка серым, результат жирным. */
-  function out(id, lead, subst, result, why) {
-    const n = el(id);
-    if (!n) return;
-    n.innerHTML = esc(lead) + '<span class="sub">' + esc(subst) + '</span> = <b>' +
-      esc(result) + '</b>' + (why ? '<div class="why">' + why + '</div>' : '');
-  }
-  function bind(container, fn) {
-    const box = typeof container === 'string' ? el(container) : container;
-    if (!box) return;
-    box.querySelectorAll('input, select').forEach((n) => {
-      n.addEventListener('input', fn);
-      n.addEventListener('change', fn);
-    });
-    fn();
-  }
-  /* Сводка результатов: [{k, v}] с подсветкой изменившихся ячеек. */
-  const _prev = {};
-  function summary(id, cells) {
-    const box = el(id);
-    if (!box) return;
-    box.innerHTML = cells.map((c, i) => {
-      const key = id + i;
-      const upd = _prev[key] !== undefined && _prev[key] !== c.v;
-      _prev[key] = c.v;
-      return `<div class="cell${upd ? ' upd' : ''}"><span class="k">${c.k}</span>` +
-        `<span class="v">${c.v}</span></div>`;
-    }).join('');
-    requestAnimationFrame(() => box.querySelectorAll('.cell.upd')
-      .forEach((n) => n.classList.remove('upd')));
-  }
-
   /* ================= электрохимия ================= */
-
-  /* Стационарные потенциалы в морской воде, В по водородной шкале
-     (лекция 7, стендовые испытания в Чёрном море). */
-  const E_STAT = {
-    'Al-Zn-Mg': -0.600, 'АМг5/АМг6': -0.500, '45Г17Ю3': -0.450, '09Г2': -0.420,
-    'Ст3': -0.400, '10ХСНД (АБ, АК)': -0.370, 'ЛМуЖ55-32-1': -0.100,
-    'ОЦ10-2': -0.080, 'М3С': 0.010, 'АЖН9-4-4': 0.030,
-    '08Х18Н10Т': 0.100, '04Х20Н6Г11АМФ': 0.150, 'ВТ1-0': 0.400,
-  };
 
   /* Протекторные сплавы: ГОСТ 26251-84, лекция 9.
      e — рабочий потенциал анодно поляризованного протектора, В (водородная шкала);
@@ -123,12 +58,7 @@ window.C = (function () {
      sv — объёмное содержание сухого остатка, %; DFT/WFT — мкм; lf — коэффициент
      потерь (0,7 при 30 % потерь), S — м². */
   const wft = (dft, sv) => dft * 100 / sv;                    // толщина мокрой плёнки
-  const dftFromWft = (w, sv) => w * sv / 100;
   const tsr = (dft, sv) => 10 * sv / dft;                     // теор. укрывистость, м²/л
-  const theorRate = (dft, sv) => 1 / tsr(dft, sv);            // теор. расход, л/м²
-  const qTheor = (dft, S, sv) => dft * S / (10 * sv);         // теор. количество, л
-  const qLoss = (dft, S, sv, lf) => dft * S / (10 * sv * lf); // то же с потерями
-  const qDead = (S, dv, sv, lf) => S * dv * 100 / (sv * lf);  // «мёртвый объём», л
   /* Практический удельный расход с «мёртвым объёмом», л/м²:
      q = (dv + DFT)/(10·sv) · 100/(100 − Z), dv и DFT в мкм. */
   const rateFull = (dv_um, dft, sv, Z) =>
@@ -180,11 +110,9 @@ window.C = (function () {
   };
 
   return {
-    f, fr, plural, el, num, val, setText, setHtml, out, bind, esc, summary,
-    E_STAT, ALLOY, IDENS, WATER,
+    ALLOY, IDENS, WATER,
     protCurrent, protMass, anodeR, anodeI, areaBottom, areaMumford,
-    wft, dftFromWft, tsr, theorRate, qTheor, qLoss, qDead, rateFull,
-    DEADVOL, deadVol, NMEAS, nMeasure,
+    wft, tsr, rateFull, DEADVOL, deadVol, nMeasure,
     cf57, dcfBowden, nuSea, RHO_SEA, KNOT, AF,
   };
 })();
