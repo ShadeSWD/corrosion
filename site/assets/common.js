@@ -64,7 +64,3 @@ function summary(id, cells) {
   requestAnimationFrame(() => box.querySelectorAll('.cell.upd')
     .forEach((n) => n.classList.remove('upd')));
 }
-
-/* Выполнить действие, когда разметка страницы полностью разобрана. */
-const onReady = (fn) => (document.readyState === 'loading'
-  ? document.addEventListener('DOMContentLoaded', fn) : fn());
