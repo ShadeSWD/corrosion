@@ -227,3 +227,11 @@ table.t tr.on td { background: #fdf3d7; }
 main table { display: block; max-width: 100%; overflow-x: auto; }
 main .readout, main .caption, main .small { overflow-wrap: anywhere; }
 main .note div, main .note span { overflow-wrap: anywhere; }
+
+/* таблица виджета многокритериального выбора (relmet-choice.js) */
+table.el { width: 100%; border-collapse: collapse; font: 14.5px system-ui, sans-serif; margin: 12px 0; }
+table.el th, table.el td { border-bottom: 1px solid var(--line); padding: 6px 8px; text-align: center; vertical-align: middle; }
+table.el th:first-child, table.el td:first-child { text-align: left; }
+table.el th { background: var(--chip); font-weight: 600; }
+.relmet-box input[type=number] { font: 13.5px system-ui, sans-serif; padding: 3px 5px; border: 1px solid var(--line); border-radius: 6px; }
+.controls { display: flex; gap: 14px 22px; flex-wrap: wrap; align-items: center; margin: 10px 0; font-family: system-ui, sans-serif; font-size: 14px; }
